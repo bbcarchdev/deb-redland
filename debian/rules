@@ -1,0 +1,43 @@
+#!/usr/bin/make -f
+
+DEB_INSTALL_DOCS_ALL=README NEWS AUTHORS NOTICE
+
+# DEB_SHLIBDEPS_LIBRARY_librdf0 := librdf
+# DEB_SHLIBDEPS_INCLUDE_librdf0 := debian/tmp/usr/lib/
+
+## Do not do distclean which deletes the docs/html documentation
+#DEB_MAKE_CLEAN_TARGET := clean
+
+build/librdf0-dev::
+	cd docs/html && rm -f librdf.devhelp2 && ln -s redland.devhelp2 librdf.devhelp2
+
+install/librdf0-dev::
+	for lib in debian/tmp/usr/lib/librdf.la debian/tmp/usr/lib/redland/librdf_storage_*.la; do \
+	  sed "/dependency_libs/ s/'.*'/''/" $$lib >> $$lib.new && mv $$lib.new $$lib; \
+	done
+
+clean::
+	rm -f docs/html/librdf.devhelp2
+
+override_dh_autoreconf:
+	dh_testdir 
+	NOCONFIGURE=1 ./autogen.sh 
+	cp -f /usr/share/misc/config.sub config.sub 
+	cp -f /usr/share/misc/config.guess config.guess
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+	  --enable-maintainer-mode \
+	  --with-raptor=system \
+	  --with-rasqal=system \
+	  --with-threestore=no \
+	  --with-mysql=yes \
+	  --with-sqlite=yes \
+	  --with-postgresql=yes \
+	  --with-openssl-digests=no \
+	  --with-virtuoso=no \
+	  --enable-gtk-doc \
+	  --enable-release
+
+%:
+	dh $@ --with autoreconf
